@@ -59,77 +59,64 @@
             
             // 显示词频分析结果
             if(data.wordFrequency) {
-                let resultHTML = '';
-                // 由于后续代码中不能重复声明 chartIds，这里先声明变量，避免重复声明问题
-// 移除重复声明，使用已存在的 chartIds 变量，无需重新声明
-// 这里不做任何声明操作，因为后续代码会复用这个变量
-                for(const [category, words] of Object.entries(data.wordFrequency)) {
-                    // 过滤空分类
-                    if(Object.keys(words).length === 0) continue;
-                    const chineseCategory = decodeURIComponent(JSON.parse('"' + category + '"'));
-                    resultHTML += `<h4>${chineseCategory}</h4><ul>`;
-                    for(const [word, count] of Object.entries(words)) {
-                        resultHTML += `<li>${word}: ${count}</li>`;
-                    }
-                    resultHTML += '</ul>';
-                    
-                    // 为每个分类创建ECharts图表并记录ID
-                    const chartId = 'chart_' + category + '_' + Date.now();
-                    console.log('创建图表容器:', chartId);
-                    resultHTML += `<div id="${chartId}" style="width:100%;height:400px;"></div>`;
-                    chartIds.push(chartId);
+            let resultHTML = '';
+            const validCategories = []; // 存储有效分类名
+
+            for(const [category, words] of Object.entries(data.wordFrequency)) {
+                // 跳过空分类
+                if(Object.keys(words).length === 0) continue;
+                
+                const chineseCategory = decodeURIComponent(JSON.parse('"' + category + '"'));
+                validCategories.push(category); // 记录有效分类
+                
+                // 生成列表
+                resultHTML += `<h4>${chineseCategory}</h4><ul>`;
+                for(const [word, count] of Object.entries(words)) {
+                    resultHTML += `<li>${word}: ${count}</li>`;
                 }
-                document.getElementById('result').innerHTML = resultHTML;
+                resultHTML += '</ul>';
                 
-                
-                
-                // 初始化所有图表
-                // 二次过滤确保有效分类
-                const validChartIds = chartIds.filter((id, index) => {
-                    const category = Object.keys(data.wordFrequency)[index];
-                    return Object.keys(data.wordFrequency[category]).length > 0;
-                });
-                
-                for(let i = 0; i < validChartIds.length; i++) {
-                    const chartDom = document.getElementById(chartIds[i]);
-                    if(chartDom) {
-                        console.log('初始化图表:', chartIds[i]);
-                        const myChart = echarts.init(chartDom);
-                        console.log('图表初始化完成:', myChart);
-                        const category = Object.keys(data.wordFrequency)[i];
-                        const words = data.wordFrequency[category];
-                        console.log('准备渲染图表数据:', {category, words});
-                    
-                        // 准备图表数据
-                        const chartWords = Object.entries(words)
-                            .sort((a, b) => b[1] - a[1])
-                            .slice(0, 10);
-                    
-                        const option = {
-                            title: {
-                                text: `${category} - 词频Top10`
-                            },
-                            tooltip: {},
-                            xAxis: {
-                                type: 'value'
-                            },
-                            yAxis: {
-                                type: 'category',
-                                data: chartWords.map(item => item[0])
-                            },
-                            series: [{
-                                name: '出现次数',
-                                type: 'bar',
-                                data: chartWords.map(item => item[1])
-                            }]
-                        };
-                    
-                        console.log('设置图表选项:', option);
-                        myChart.setOption(option);
-                        console.log('图表渲染完成');
-                    }
-                }
+                // 生成图表容器（使用安全ID）
+                const safeId = 'chart_' + validCategories.length;
+                resultHTML += `<div id="${safeId}" style="width:100%;height:400px;"></div>`;
             }
+            document.getElementById('result').innerHTML = resultHTML;
+            
+            // 初始化图表（按有效分类顺序）
+            validCategories.forEach((category, index) => {
+                const chartId = 'chart_' + (index + 1);
+                const chartDom = document.getElementById(chartId);
+                
+                if(chartDom) {
+                    const myChart = echarts.init(chartDom);
+                    const words = data.wordFrequency[category];
+                    const chineseCategory = decodeURIComponent(JSON.parse('"' + category + '"'));
+                    
+                    // 准备图表数据
+                    const chartWords = Object.entries(words)
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 10);
+                    
+                    const option = {
+                        title: {
+                            text: `${chineseCategory} - 词频Top10`
+                        },
+                        tooltip: {},
+                        xAxis: { type: 'value' },
+                        yAxis: {
+                            type: 'category',
+                            data: chartWords.map(item => item[0])
+                        },
+                        series: [{
+                            name: '出现次数',
+                            type: 'bar',
+                            data: chartWords.map(item => item[1])
+                        }]
+                    };
+                    myChart.setOption(option);
+                }
+            });
+        }
         })
         .catch(error => {
             console.error('Error:', error);
