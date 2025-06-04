@@ -6,7 +6,7 @@
 </head>
 <body>
     <div class="container">
-        <h1 style="text-align: center;">Amazon评论分析</h1>
+        <h1 style="text-align: center;">Amazon/Trustpilot评论分析</h1>
         <h3>上传CSV文件</h3>
         <p style="color:red">注意：词带（-）负号意思是否定, 查看<a target="_blank" href="https://juejin.cn/post/7503799944064778240">使用教程</a></p>
         <input type="file" id="csvFile" accept=".csv">
@@ -28,7 +28,18 @@
     </div>
     <!-- 引入 ECharts -->
     <script src="{{ url_for('static', filename='echarts.min.js') }}"></script>
+    <!-- 新增错误提示区域 -->
+    <div id="errorSection" class="hidden" style="color: red; margin: 10px 0;"></div>
+    
+    <!-- 修改后的JavaScript部分 -->
     <script>
+    function showError(message) {
+        const errorSection = document.getElementById('errorSection');
+        errorSection.innerHTML = message;
+        errorSection.classList.remove('hidden');
+        setTimeout(() => errorSection.classList.add('hidden'), 5000);
+    }
+    
     function uploadFile() {
         const chartIds = [];
         console.log('开始上传文件处理流程');
@@ -40,11 +51,11 @@
         
         const formData = new FormData();
         formData.append('file', file);
-
+    
         // 显示加载提示
         console.log('显示加载提示');
         document.getElementById('loading').classList.remove('hidden');
-
+    
         fetch('/upload', {
             method: 'POST',
             body: formData
@@ -61,7 +72,7 @@
             if(data.wordFrequency) {
             let resultHTML = '';
             const validCategories = []; // 存储有效分类名
-
+    
             for(const [category, words] of Object.entries(data.wordFrequency)) {
                 // 跳过空分类
                 if(Object.keys(words).length === 0) continue;
@@ -119,9 +130,7 @@
         }
         })
         .catch(error => {
-            console.error('Error:', error);
-            alert('上传处理失败: ' + error.message);
-            // 隐藏加载提示
+            showError(error.error);
             document.getElementById('loading').classList.add('hidden');
         });
     }
