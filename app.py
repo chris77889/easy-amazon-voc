@@ -23,6 +23,13 @@ def upload_file():
 
     if not file.filename.endswith('.csv'):
         return jsonify({'error': '仅支持CSV文件'}), 400
+        
+    # 检查CSV行数不超过100条
+    file.seek(0)
+    line_count = sum(1 for _ in csv.reader(file.read().decode('utf-8').splitlines()))
+    if line_count > 30:
+        return jsonify({'error': 'CSV文件数据不能超过30条'}), 400
+    file.seek(0)
 
     # 保存原始文件
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -99,9 +106,38 @@ def upload_file():
             row.append(','.join(do_things_dict.get('体验价值', {}).get('价格感知', [])))
             writer.writerow(row) 
 
+    # 词频分析
+    word_frequency = {}
+    with open(output_path, 'r', newline='', encoding='utf-8') as csvfile:
+        for column in ['用户需求与痛点-使用场景', '用户需求与痛点-购买动机', '产品反馈-产品优点', 
+                     '产品反馈-产品缺点', '产品反馈-用户期望建议', '产品反馈-设计与外观',
+                     '服务评价-物流配送', '服务评价-售后服务', '服务评价-售前服务',
+                     '品牌形象与口碑-推荐意愿原因分析', '品牌形象与口碑-是否愿意推荐给他人',
+                     '品牌形象与口碑-品牌印象', '感官感受', '价格感知']:
+            word_frequency[column] = {}
+            csvfile.seek(0)  # 重置文件指针到开头
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                words = row[column].split(',')
+                for word in words:
+                    word = word.strip()
+                    if word:
+                        word_frequency[column][word] = word_frequency[column].get(word, 0) + 1
+            
+            # 按词频从大到小排序
+            word_frequency[column] = dict(
+                sorted(
+                    word_frequency[column].items(), 
+                    key=lambda item: item[1], 
+                    reverse=True
+                )
+            )
+            csvfile.seek(0)  # 重置指针
+    
     return jsonify({
         'filename': output_filename,
-        'filepath': f'/download/{output_filename}'
+        'filepath': f'/download/{output_filename}',
+        'wordFrequency': word_frequency
     })
 
 @app.route('/download/<filename>')

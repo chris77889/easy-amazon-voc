@@ -2,7 +2,7 @@ import os
 from openai import OpenAI
 
 def get_meta(whole_content):
-    CHATGPT_API_KEY='38a8d07d-fa16-4ff2-979c-c11834fssc'
+    CHATGPT_API_KEY='38a8d07d-fa16-4ff2-979csss9dac'
     client = OpenAI(
         # 从环境变量中读取您的方舟API Key
         api_key=CHATGPT_API_KEY, 
@@ -137,7 +137,7 @@ def generate_doc_description(whole_content, model=None):
     
     Directly return the json, do not include any other text.
     """
-    CHATGPT_API_KEY='38a8d07d-fa16-4ff2-979c-c11834fssac'
+    CHATGPT_API_KEY='38a8d07d-fa16-4ff2-979csss9dac'
     client = OpenAI(
         # 从环境变量中读取您的方舟API Key
         api_key=CHATGPT_API_KEY, 
@@ -162,7 +162,7 @@ def do_review(do_content,deal_whole_content):
 ##
    {do_content}
  ##   """
-    CHATGPT_API_KEY='38a8d07d-fa16-4ff2-979c-c11834f39dac'
+    CHATGPT_API_KEY='38a8d07d-fa16-4ff2-979csss9dac'
     client = OpenAI(
         # 从环境变量中读取您的方舟API Key
         api_key=CHATGPT_API_KEY, 
