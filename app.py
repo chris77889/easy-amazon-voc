@@ -27,8 +27,8 @@ def upload_file():
     # 检查CSV行数不超过100条
     file.seek(0)
     line_count = sum(1 for _ in csv.reader(file.read().decode('utf-8').splitlines()))
-    if line_count > 30:
-        return jsonify({'error': 'CSV文件数据不能超过30条'}), 400
+    if line_count > 300:
+        return jsonify({'error': 'CSV文件数据不能超过30条'}), 200
     file.seek(0)
 
     # 保存原始文件
@@ -48,7 +48,10 @@ def upload_file():
         
         # 处理表头
         headers = next(reader)
-        target_column = headers.index('cr-original-review-content (2)')
+        try:
+            target_column = headers.index('cr-original-review-content (2)')
+        except ValueError:
+            target_column = 10  # 第11列（索引从0开始）
         headers.append('用户需求与痛点-使用场景')  
         headers.append('用户需求与痛点-购买动机')
         headers.append('产品反馈-产品优点')  
@@ -69,6 +72,7 @@ def upload_file():
         whole_content = ""
         for row in reader:
             content = row[target_column] 
+            print("原始内容：", content)  # 打印原始内容
             whole_content += content + "\n"  # 拼接内容 
         print("完整内容：", whole_content)  # 打印拼接结果
         deal_whole_content = generate_doc_description(whole_content)
@@ -77,6 +81,10 @@ def upload_file():
         infile.seek(0)  # 重置指针到文件开头
         for row in reader: 
             do_content = row[target_column] 
+            # 如果do_content为空或不是字符串，则跳过
+            if not isinstance(do_content, str) or not do_content.strip():
+                print(f"跳过空或非字符串内容: {do_content}")
+                continue
             do_things = do_review(do_content, deal_whole_content)
             print("处理do_things：", do_things)
             # 解析JSON数据
