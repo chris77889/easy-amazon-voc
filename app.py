@@ -1,8 +1,9 @@
 from flask import Flask, render_template, request, jsonify, send_from_directory
 import os
+import datetime
 import csv
 import json
-from functions import  generate_doc_description, do_review,get_json_content
+from functions import  generate_doc_description, do_review,get_json_content,generate_Persona
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
@@ -25,15 +26,24 @@ def upload_file():
         return jsonify({'error': '仅支持CSV文件'}), 400
         
     # 检查CSV行数不超过100条
-    file.seek(0)
-    line_count = sum(1 for _ in csv.reader(file.read().decode('utf-8').splitlines()))
+    # 创建临时文件副本进行行数检查
+    temp_content = file.read()
+    try:
+        decoded_content = temp_content.decode('utf-8')
+    except UnicodeDecodeError:
+        try:
+            decoded_content = temp_content.decode('gbk')
+        except UnicodeDecodeError:
+            return jsonify({'error': '文件编码不支持，请使用UTF-8或GBK编码的CSV文件'}), 400
+            
+    line_count = sum(1 for _ in csv.reader(decoded_content.splitlines()))
     if line_count > 300:
         return jsonify({'error': 'CSV文件数据不能超过30条'}), 200
-    file.seek(0)
 
     # 保存原始文件
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     input_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+    file.seek(0)  # 重置文件指针以便保存
     file.save(input_path)
 
     # 处理CSV文件
@@ -49,11 +59,14 @@ def upload_file():
         # 处理表头
         headers = next(reader)
         try:
-            target_column = headers.index('cr-original-review-content (2)')
+            target_column = next(i for col in ['typography_body-l__v5JLj', 'cr-original-review-content (2)', 'review_content'] for i, h in enumerate(headers) if h == col)
+            print("目标列索引:", target_column)
         except ValueError:
             target_column = 10  # 第11列（索引从0开始）
         headers.append('用户需求与痛点-使用场景')  
         headers.append('用户需求与痛点-购买动机')
+        headers.append('用户需求与痛点-未被满足的需求')
+        headers.append('用户需求与痛点-痛点问题')
         headers.append('产品反馈-产品优点')  
         headers.append('产品反馈-产品缺点')  
         headers.append('产品反馈-用户期望建议')  
@@ -70,15 +83,33 @@ def upload_file():
         
         # 处理数据行
         whole_content = ""
+        count = 0
         for row in reader:
+            if count >= 100:
+                break
             content = row[target_column] 
             print("原始内容：", content)  # 打印原始内容
             whole_content += content + "\n"  # 拼接内容 
+            count += 1
         print("完整内容：", whole_content)  # 打印拼接结果
         deal_whole_content = generate_doc_description(whole_content)
         print("处理内容meta：", deal_whole_content)
+        persona = generate_Persona(whole_content)
+        md_filename = output_filename + f"_persona_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
+        persona_path = os.path.join('uploads', md_filename)
+        os.makedirs('uploads', exist_ok=True)
+        with open(persona_path, 'w', encoding='utf-8') as f:
+            f.write(persona)
+        
+        # persona是markdown,转为html
+        import markdown
+        persona_html = markdown.markdown(persona)
 
-        infile.seek(0)  # 重置指针到文件开头
+        # 重新打开文件读取数据
+        infile.close()
+        infile = open(input_path, 'r', newline='', encoding='utf-8')
+        reader = csv.reader(infile)
+        next(reader)  # 跳过表头
         for row in reader: 
             do_content = row[target_column] 
             # 如果do_content为空或不是字符串，则跳过
@@ -98,8 +129,10 @@ def upload_file():
                 print(f"返回内容不是字典: {do_things_dict}")
                 continue
             # 按表头顺序提取字段值（列表转字符串，逗号分隔）
-            row.append(','.join(do_things_dict.get('人群场景', {}).get('用户需求与痛点-使用场景', [])))
-            row.append(','.join(do_things_dict.get('人群场景', {}).get('用户需求与痛点-购买动机', [])))
+            row.append(','.join(do_things_dict.get('人群与场景', {}).get('用户需求与痛点-使用场景', [])))
+            row.append(','.join(do_things_dict.get('人群与场景', {}).get('用户需求与痛点-购买动机', [])))
+            row.append(','.join(do_things_dict.get('人群与场景', {}).get('用户需求与痛点-未被满足的需求', [])))
+            row.append(','.join(do_things_dict.get('人群与场景', {}).get('用户需求与痛点-痛点问题', [])))
             row.append(','.join(do_things_dict.get('功能价值', {}).get('产品反馈-产品优点', [])))
             row.append(','.join(do_things_dict.get('功能价值', {}).get('产品反馈-产品缺点', [])))
             row.append(','.join(do_things_dict.get('功能价值', {}).get('产品反馈-用户期望建议', [])))
@@ -117,7 +150,7 @@ def upload_file():
     # 词频分析
     word_frequency = {}
     with open(output_path, 'r', newline='', encoding='utf-8') as csvfile:
-        for column in ['用户需求与痛点-使用场景', '用户需求与痛点-购买动机', '产品反馈-产品优点', 
+        for column in ['用户需求与痛点-使用场景', '用户需求与痛点-购买动机','用户需求与痛点-未被满足的需求','用户需求与痛点-痛点问题', '产品反馈-产品优点', 
                      '产品反馈-产品缺点', '产品反馈-用户期望建议', '产品反馈-设计与外观',
                      '服务评价-物流配送', '服务评价-售后服务', '服务评价-售前服务',
                      '品牌形象与口碑-推荐意愿原因分析', '品牌形象与口碑-是否愿意推荐给他人',
@@ -126,7 +159,8 @@ def upload_file():
             csvfile.seek(0)  # 重置文件指针到开头
             reader = csv.DictReader(csvfile)
             for row in reader:
-                words = row[column].split(',')
+                cell_value = row.get(column, '') or ''  # 双重空值保护
+                words = cell_value.split(',') if cell_value else []
                 for word in words:
                     word = word.strip()
                     if word:
@@ -145,7 +179,8 @@ def upload_file():
     return jsonify({
         'filename': output_filename,
         'filepath': f'/download/{output_filename}',
-        'wordFrequency': word_frequency
+        'wordFrequency': word_frequency,
+        'persona': persona_html
     })
 
 @app.route('/download/<filename>')

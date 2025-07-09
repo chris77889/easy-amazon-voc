@@ -2,15 +2,15 @@ import os
 from openai import OpenAI
 
 def get_meta(whole_content):
-    CHATGPT_API_KEY='38a8d07d-fa16-4ff2-979csss9dac'
+    CHATGPT_API_KEY='sssssssy0sUi7A_j9OoKVR0wVF2CEcwnRDOuMdk8U-7I_V3BNLkmsNrW0E'
     client = OpenAI(
         # 从环境变量中读取您的方舟API Key
         api_key=CHATGPT_API_KEY, 
-        base_url="https://ark.cn-beijing.volces.com/api/v3",
+        base_url="https://sssssss.xyz/v1",
         )
     completion = client.chat.completions.create(
         # 将推理接入点 <Model>替换为 Model ID
-        model="doubao-1.5-pro-32k-250115",
+        model="gpt-4o",
         messages=[
             {"role": "user", "content": "你好"}
         ]
@@ -100,7 +100,7 @@ def generate_doc_description(whole_content, model=None):
 1.  仔细阅读并分析我稍后提供的一批用户购后评论文本。
 2.  基于上述理论知识、层级结构定义和设计原则，为这批评论所讨论的产品生成一个三级标签体系。
 3.  一级标签和二级标签的类别和名称，您可以参考我给出的示例进行扩展或调整，使其更贴合实际评论内容，但一级标签必须是固定的四个维度。
-4.  三级标签是您创造性的核心，需要您从评论中提炼用户实际讨论的具体议题点，并用简洁的词语命名。
+4.  三级标签是您创造性的核心，需要您从评论中提炼用户实际讨论的具体议题点，并用简洁的词语命名。三级标签尽可能完备和全面。
 5.  确保每个三级标签都归属于一个明确的二级标签和一级标签。
 6.  输出格式要求：请以结构化的JSON格式输出您设计的标签体系。 这样便于我直接将其用于后续的AI打标任务。格式如下：
 
@@ -135,20 +135,21 @@ def generate_doc_description(whole_content, model=None):
 
 请确认您已理解以上所有要求。在我提供用户评论文本后，请开始您的分析和标签体系构建工作。用户评论文本: #####: {whole_content}
     
-    Directly return the json, do not include any other text.
+  #####,  Directly return the json, do not include any other text.
     """
-    CHATGPT_API_KEY='38a8d07d-fa16-4ff2-979csss9dac'
+    CHATGPT_API_KEY='sssssssy0sUi7A_j9OoKVR0wVF2CEcwnRDOuMdk8U-7I_V3BNLkmsNrW0E'
     client = OpenAI(
         # 从环境变量中读取您的方舟API Key
         api_key=CHATGPT_API_KEY, 
-        base_url="https://ark.cn-beijing.volces.com/api/v3",
+        base_url="https://sssssss.xyz/v1",
         )
     completion = client.chat.completions.create(
         # 将推理接入点 <Model>替换为 Model ID
-        model="doubao-1.5-pro-32k-250115",
+        model="gpt-4o",
         messages=[
             {"role": "user", "content": prompt}
-        ]
+        ],
+        timeout=30  # 添加30秒超时设置
     )
     print(completion.choices[0].message)
     return completion.choices[0].message.content
@@ -157,23 +158,24 @@ def generate_doc_description(whole_content, model=None):
 def do_review(do_content,deal_whole_content):
     print('******do_review****')
     prompt = f"""请基于评价标签体系进行标签分析，标签体系为： ### : {deal_whole_content}, ### , 
-要求：当评价满足标签则留下标签，当评价无关标签则去掉标签，当评价与标签相反则记下（-标签）作为标签， 格式返回原来的标签体系结构。  
+要求：当评价满足标签则记录下标签，当评价无关标签则去掉标签。按评价内容是否正面评价还是反面评价，标记形如：’[正面]标签’或者‘[负面]标签‘ 作为标签。 格式返回为原来的标签体系结构。  
 以下是评价内容： 
 ##
    {do_content}
  ##   """
-    CHATGPT_API_KEY='38a8d07d-fa16-4ff2-979csss9dac'
+    CHATGPT_API_KEY='sssssssy0sUi7A_j9OoKVR0wVF2CEcwnRDOuMdk8U-7I_V3BNLkmsNrW0E'
     client = OpenAI(
         # 从环境变量中读取您的方舟API Key
         api_key=CHATGPT_API_KEY, 
-        base_url="https://ark.cn-beijing.volces.com/api/v3",
+        base_url="https://sssssss.xyz/v1",
         )
     completion = client.chat.completions.create(
         # 将推理接入点 <Model>替换为 Model ID
-        model="doubao-1.5-pro-32k-250115",
+        model="gpt-4o",
         messages=[
             {"role": "user", "content": prompt}
-        ]
+        ],
+        timeout=30  # 添加30秒超时设置
     )
     print(completion.choices[0].message)
     return completion.choices[0].message.content
@@ -193,3 +195,48 @@ def get_json_content(response):
     
     json_content = response.strip()
     return json_content
+
+
+
+
+
+
+
+# 生成用户画像
+def generate_Persona(whole_content, model=None):
+    print('******generate_Persona****')
+    prompt = f"""# 你是一名用户画像分析师。 分析需求和概念：
+基础属性描述
+用户的静态人口统计学特征。 
+示例：- 年龄：28岁 - 性别：女性 - 地理位置：上海 - 职业：全职妈妈 
+ 行为特征描述
+用户的实际行为轨迹，体现用户“做了什么”。 
+示例标签：- 月消费金额：2000元 - 购买频率：每月购买4次母婴用品 -
+心理动机描述
+用户行为背后的动机、价值观和偏好，体现“为什么这么做”。 
+示例：- 对促销活动敏感：对满减和赠品活动高度关注 - 品牌偏好：倾向选择国际知名母婴品牌 - 商品安全性：重视商品成分和评价 　
+外部环境描述用户所处的社会环境和关系网络，体现外部影响因素。 
+示例：- 社交圈：经常与其他宝妈分享购物心得 - 活跃平台：微博、母婴论坛、
+需求痛点
+明确用户的核心需求和主要问题，帮助定义用户的关键目标。 
+示例：- 需求：寻找高品质、高性价比的母婴用品 - 痛点：缺乏时间，偏好快速送达 - 期待：希望平台提供可信赖的商品评价体系 　　
+以上是用户画像的概念之后，请完成做一份用户画像分析报告。请根据以下 商品评论生成3-5个典型用户画像，每个包含性别年龄估计、需求关键词、购买动机、情绪语气判断 和用户画像标签
+请你根据这些信息，反推出用户画像： #####,   {whole_content}
+    
+  #####,
+    """
+    CHATGPT_API_KEY='sssssssy0sUi7A_j9OoKVR0wVF2CEcwnRDOuMdk8U-7I_V3BNLkmsNrW0E'
+    client = OpenAI(
+        # 从环境变量中读取您的方舟API Key
+        api_key=CHATGPT_API_KEY, 
+        base_url="https://sssssss.xyz/v1",
+        )
+    completion = client.chat.completions.create(
+        # 将推理接入点 <Model>替换为 Model ID
+        model="gpt-4o",
+        messages=[
+            {"role": "user", "content": prompt}
+        ]
+    )
+    print(completion.choices[0].message)
+    return completion.choices[0].message.content

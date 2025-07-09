@@ -8,7 +8,8 @@
     <div class="container">
         <h1 style="text-align: center;">Amazon/Trustpilot评论分析</h1>
         <h3>上传CSV文件</h3>
-        <p style="color:red">注意：词带（-）负号意思是否定, 查看<a target="_blank" href="https://juejin.cn/post/7503799944064778240">使用教程</a></p>
+        <p style="color:red">注意：直接上传爬虫插件的csv文件就可以，如果是自己的review文件csv，那么在需要分析的csv字段改名为： review_content。  查看<a target="_blank" href="https://juejin.cn/post/7503799944064778240">使用教程</a></p>
+        <p style="color:blue">爬虫插件下载地址：https://chromewebstore.google.com/detail/cljbfnedccphacfneigoegkiieckjndh  ，直接一键爬虫全部trustpolit和amazon评论</p>
         <input type="file" id="csvFile" accept=".csv">
         <button onclick="uploadFile()">上传处理</button>
         <p>上传文件格式demo: <a href="{{ url_for('static', filename='demo.csv') }}">下载</a></p>
@@ -22,6 +23,9 @@
                 <h3>词频分析结果</h3>
                 <div id="result"></div>
                 <div id="wordCloud"></div>
+
+                <h3>用户画像分析结果:</h3>
+                <div id="persona_result"></div> 
             </div>
         </div>
        
@@ -69,7 +73,7 @@
             document.getElementById('downloadSection').classList.remove('hidden');
             
             // 显示词频分析结果
-            if(data.wordFrequency) {
+        if(data.wordFrequency) {
             let resultHTML = '';
             const validCategories = []; // 存储有效分类名
     
@@ -92,6 +96,8 @@
                 resultHTML += `<div id="${safeId}" style="width:100%;height:400px;"></div>`;
             }
             document.getElementById('result').innerHTML = resultHTML;
+
+            
             
             // 初始化图表（按有效分类顺序）
             validCategories.forEach((category, index) => {
@@ -127,6 +133,11 @@
                     myChart.setOption(option);
                 }
             });
+        }
+
+        if(data.persona) {
+            let persona_resultHTML = data.persona;
+            document.getElementById('persona_result').innerHTML = persona_resultHTML;
         }
         })
         .catch(error => {
